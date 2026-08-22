@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>L'Essence — Fly Through</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500&display=swap');
+
+:root {
+  --accent: #C9A227;
+  --bg: #F5F0E8;
+  --ink: #1A1A1A;
+  --muted: #6B6560;
+  --font-display: 'Playfair Display', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html {
+  background: var(--bg);
+  /* The scroll track — tall enough for a cinematic journey */
+  height: 400vh;
+}
+
+body {
+  font-family: var(--font-body);
+  color: var(--ink);
+  background: var(--bg);
+}
+
+/* Fixed video stage */
+#stage {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  background: var(--bg);
+}
+
+#stage video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 42%;
+}
+
+/* Gradient overlay for text readability */
+#stage::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(245,240,232,0.85) 0%, rgba(245,240,232,0.4) 35%, transparent 60%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+/* Copy layer */
+#copylayer {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.scene-copy {
+  position: absolute;
+  left: clamp(24px, 5vw, 64px);
+  top: 50%;
+  transform: translateY(-50%);
+  width: min(42vw, 480px);
+  opacity: 0;
+  transition: opacity 0.6s ease, transform 0.6s ease;
+  pointer-events: auto;
+}
+
+.scene-copy.visible {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.scene-copy.hidden-right {
+  transform: translateY(-50%) translateX(30px);
+}
+
+.scene-copy.hidden-left {
+  transform: translateY(-50%) translateX(-30px);
+}
+
+.eyebrow {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  color: var(--accent);
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 5vw, 4rem);
+  line-height: 1.08;
+  margin-bottom: 1.2rem;
+  color: var(--ink);
+}
+
+.title em {
+  font-style: italic;
+  color: var(--accent);
+}
+
+.body {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  color: var(--muted);
+  max-width: 420px;
+  margin-bottom: 1.5rem;
+}
+
+.tags {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.tag {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 100px;
+  color: var(--muted);
+  background: rgba(255,255,255,0.5);
+  backdrop-filter: blur(10px);
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 1.5rem;
+  padding: 0.9rem 2.2rem;
+  background: var(--ink);
+  color: #fff;
+  text-decoration: none;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 500;
+  border-radius: 100px;
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+
+.cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(26,26,26,0.2);
+}
+
+/* Progress bar */
+#progress {
+  position: fixed;
+  top: 0;
+  left: 0;
+  height: 3px;
+  background: var(--accent);
+  z-index: 100;
+  width: 0%;
+  transition: width 0.1s linear;
+}
+
+/* Route rail */
+#rail {
+  position: fixed;
+  right: clamp(14px, 2.4vw, 30px);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.rail-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.12);
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  border: none;
+}
+
+.rail-dot.active {
+  background: var(--accent);
+  transform: scale(1.4);
+  box-shadow: 0 0 0 4px rgba(201,162,39,0.2);
+}
+
+.rail-dot::after {
+  content: attr(data-label);
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  white-space: nowrap;
+  pointer-events: none;
+  background: rgba(255,255,255,0.8);
+  padding: 3px 10px;
+  border-radius: 100px;
+  backdrop-filter: blur(6px);
+}
+
+.rail-dot:hover::after,
+.rail-dot.active::after {
+  opacity: 1;
+}
+
+/* Scroll hint */
+#hint {
+  position: fixed;
+  left: 50%;
+  bottom: 28px;
+  z-index: 50;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--muted);
+  transition: opacity 0.4s ease;
+}
+
+#hint i {
+  width: 20px;
+  height: 32px;
+  border-radius: 12px;
+  border: 2px solid rgba(0,0,0,0.15);
+  position: relative;
+}
+
+#hint i::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 6px;
+  width: 3px;
+  height: 6px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateX(-50%);
+  animation: wheel 1.8s ease-in-out infinite;
+}
+
+@keyframes wheel {
+  0% { opacity: 0; top: 5px; }
+  40% { opacity: 1; }
+  100% { opacity: 0; top: 16px; }
+}
+
+/* Brand bar */
+#topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: clamp(14px, 2.4vw, 24px) clamp(18px, 5vw, 64px);
+  pointer-events: none;
+}
+
+#topbar > * { pointer-events: auto; }
+
+.brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.1rem;
+  color: var(--ink);
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-mark {
+  width: 22px;
+  height: 26px;
+  border-radius: 6px 6px 9px 9px;
+  background: linear-gradient(160deg, var(--accent), #a08020);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  #stage::after {
+    background: linear-gradient(0deg, rgba(245,240,232,0.9) 10%, rgba(245,240,232,0.5) 40%, transparent 70%);
+  }
+  .scene-copy {
+    left: clamp(20px, 5vw, 40px);
+    right: clamp(20px, 5vw, 40px);
+    top: auto;
+    bottom: clamp(80px, 15vh, 140px);
+    transform: none;
+    width: auto;
+    max-width: none;
+  }
+  .scene-copy.visible {
+    transform: translateY(0);
+  }
+  .scene-copy.hidden-right,
+  .scene-copy.hidden-left {
+    transform: translateY(20px);
+  }
+  .title { font-size: clamp(1.8rem, 7vw, 2.6rem); }
+  .body { font-size: 0.95rem; }
+  #rail { right: 8px; gap: 14px; }
+  .rail-dot::after { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-copy { transition: none; }
+  #hint i::after { animation: none; }
+}
+</style>
+<base target="_blank">
+</head>
+<body>
+
+<div id="progress"></div>
+
+<div id="topbar">
+  <a href="#" class="brand">
+    <span class="brand-mark"></span>
+    L'Essence
+  </a>
+</div>
+
+<nav id="rail">
+  <button class="rail-dot active" data-label="Garden" onclick="jumpTo(0)"></button>
+  <button class="rail-dot" data-label="Atelier" onclick="jumpTo(1)"></button>
+  <button class="rail-dot" data-label="Boutique" onclick="jumpTo(2)"></button>
+  <button class="rail-dot" data-label="Moment" onclick="jumpTo(3)"></button>
+</nav>
+
+<div id="stage">
+  <!-- YOUR 32-SECOND VIDEO HERE -->
+  <video id="scrubVideo" muted playsinline preload="auto" poster="assets/poster.jpg">
+    <source src="perfume-journey.mp4.mp4" type="video/mp4">
+  </video>
+</div>
+
+<div id="copylayer">
+
+  <!-- Scene 1: Garden (0-25% of scroll) -->
+  <div class="scene-copy hidden-right" data-scene="0">
+    <div class="eyebrow">It begins before dawn</div>
+    <h1 class="title">The <em>Garden</em></h1>
+    <p class="body">Where petals are still cool and the air smells of rain. Turkish rose, jasmine grandiflorum, and the quiet humidity of greenhouses at first light.</p>
+    <div class="tags">
+      <span class="tag">Single-origin</span>
+      <span class="tag">Hand-picked</span>
+      <span class="tag">Dew harvest</span>
+    </div>
+  </div>
+
+  <!-- Scene 2: Atelier (25-50%) -->
+  <div class="scene-copy hidden-right" data-scene="1">
+    <div class="eyebrow">Craft, not chemistry</div>
+    <h2 class="title">The <em>Atelier</em></h2>
+    <p class="body">127 ingredients. One nose. Zero shortcuts. Copper stills, glass beakers, and the patience to wait for the heart note to reveal itself.</p>
+    <div class="tags">
+      <span class="tag">Small-batch</span>
+      <span class="tag">127 notes</span>
+    </div>
+  </div>
+
+  <!-- Scene 3: Boutique (50-75%) -->
+  <div class="scene-copy hidden-right" data-scene="2">
+    <div class="eyebrow">The ritual</div>
+    <h2 class="title">The <em>Boutique</em></h2>
+    <p class="body">Found in only twelve places on earth. Marble, velvet, and the hush that falls before you lift the stopper.</p>
+    <div class="tags">
+      <span class="tag">By appointment</span>
+      <span class="tag">12 locations</span>
+    </div>
+  </div>
+
+  <!-- Scene 4: Moment (75-100%) -->
+  <div class="scene-copy hidden-right" data-scene="3">
+    <div class="eyebrow">Your skin remembers</div>
+    <h2 class="title">L'<em>Essence</em></h2>
+    <p class="body">The eau de parfum. 50ml of what happens when time, temperature, and intention converge on a single point.</p>
+    <a href="#" class="cta">Shop the collection</a>
+  </div>
+
+</div>
+
+<div id="hint">
+  <span>Scroll to explore</span>
+  <i></i>
+</div>
+
+<script>
+const video = document.getElementById('scrubVideo');
+const progress = document.getElementById('progress');
+const hint = document.getElementById('hint');
+const copies = document.querySelectorAll('.scene-copy');
+const dots = document.querySelectorAll('.rail-dot');
+
+// Scene timing (0-1 range within the video)
+// Adjust these to match when each scene appears in YOUR 32s video
+const scenes = [
+  { start: 0.00, end: 0.25, label: 'Garden' },    // 0-8 seconds
+  { start: 0.25, end: 0.50, label: 'Atelier' },   // 8-16 seconds
+  { start: 0.50, end: 0.75, label: 'Boutique' },  // 16-24 seconds
+  { start: 0.75, end: 1.00, label: 'Moment' }     // 24-32 seconds
+];
+
+let videoReady = false;
+let currentScene = -1;
+
+video.addEventListener('loadedmetadata', () => {
+  videoReady = true;
+  video.pause();
+});
+
+// Also try to catch if metadata already loaded
+if (video.readyState >= 1) {
+  videoReady = true;
+  video.pause();
+}
+
+function update() {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const scrollRatio = Math.max(0, Math.min(1, window.scrollY / maxScroll));
+
+  // Update progress bar
+  progress.style.width = (scrollRatio * 100) + '%';
+
+  // Hide hint after scrolling starts
+  hint.style.opacity = scrollRatio > 0.05 ? '0' : '1';
+
+  // Scrub video
+  if (videoReady && video.duration) {
+    const targetTime = scrollRatio * video.duration;
+    // Smooth lerp for buttery feel (adjust 0.15 for more/less smoothing)
+    const diff = targetTime - video.currentTime;
+    if (Math.abs(diff) > 0.05) {
+      video.currentTime = targetTime;
+    }
+  }
+
+  // Show/hide copy based on which scene we're in
+  let activeScene = -1;
+  for (let i = 0; i < scenes.length; i++) {
+    const s = scenes[i];
+    const sceneProgress = (scrollRatio - s.start) / (s.end - s.start);
+
+    const copy = copies[i];
+
+    if (scrollRatio >= s.start && scrollRatio <= s.end) {
+      // We're inside this scene
+      activeScene = i;
+      copy.classList.add('visible');
+      copy.classList.remove('hidden-right', 'hidden-left');
+
+      // Subtle parallax on copy
+      const parallax = (sceneProgress - 0.5) * 20;
+      copy.style.transform = `translateY(-50%) translateX(${parallax}px)`;
+
+    } else if (scrollRatio < s.start) {
+      // Scene hasn't started yet
+      copy.classList.remove('visible', 'hidden-left');
+      copy.classList.add('hidden-right');
+      copy.style.transform = '';
+
+    } else {
+      // Scene has passed
+      copy.classList.remove('visible', 'hidden-right');
+      copy.classList.add('hidden-left');
+      copy.style.transform = '';
+    }
+  }
+
+  // Update rail dots
+  if (activeScene !== currentScene) {
+    currentScene = activeScene;
+    dots.forEach((dot, i) => {
+      dot.classList.toggle('active', i === activeScene);
+    });
+  }
+}
+
+function jumpTo(sceneIndex) {
+  const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+  const s = scenes[sceneIndex];
+  const targetScroll = (s.start + s.end) / 2 * maxScroll;
+  window.scrollTo({ top: targetScroll, behavior: 'smooth' });
+}
+
+// Run on scroll
+window.addEventListener('scroll', update, { passive: true });
+window.addEventListener('resize', update);
+
+// Initial call
+update();
+
+// iOS touch prime (fixes blank video on first seek)
+let primed = false;
+function prime() {
+  if (primed) return;
+  primed = true;
+  video.play().then(() => video.pause()).catch(() => {});
+}
+window.addEventListener('touchstart', prime, { once: true, passive: true });
+window.addEventListener('pointerdown', prime, { once: true, passive: true });
+</script>
+
+</body>
+</html>
